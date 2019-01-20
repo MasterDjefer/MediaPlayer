@@ -1,0 +1,201 @@
+#include "mainwindow.h"
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), isRunning(false), isRepeating(false)
+{
+    this->resize(500,500);
+    createMenu();
+    createButtons();
+    //createLabel();
+    createMusicFile();
+    createWidgetInfo();
+    createWidgetVolume();
+    createWidgetPlaybackRate();
+    createWidgetProgress();
+    createVideoWidget();
+
+    QObject::connect(mMusicFile, &MusicFile::metaDataChanged, mWidgetInfo, &WidgetInfo::setMusic);
+    QObject::connect(mMusicFile, &MusicFile::metaDataChanged, this, &MainWindow::onFileChange);
+    QObject::connect(mMusicFile, &MusicFile::positionChanged, this, &MainWindow::onPositionChange);
+}
+
+MainWindow::~MainWindow()
+{
+    delete mMusicFile;
+}
+
+void MainWindow::createMenu()
+{
+    QAction *action = new QAction("&File");
+    connect(action, &QAction::triggered, this, &MainWindow::onOpenFile);
+
+    //action->setStatusTip("dsf");
+    QMenu *menu = this->menuBar()->addMenu("&Open file...");
+    menu->addAction(action);
+}
+
+void MainWindow::createButtons()
+{
+    mButtonPlay = new QPushButton(this);
+    mButtonPlay->resize(30,30);
+    mButtonPlay->move(0,450);
+    mButtonPlay->setIcon(QIcon(":/images/play.png"));
+    mButtonPlay->setIconSize(mButtonPlay->size());
+    QObject::connect(mButtonPlay, &QPushButton::clicked, this, &MainWindow::onButtonPlayPressed);
+
+    mButtonStop = new QPushButton(this);
+    mButtonStop->resize(30,30);
+    mButtonStop->move(40,450);
+    mButtonStop->setIcon(QIcon(":/images/stop.png"));
+    mButtonStop->setIconSize(mButtonPlay->size());
+    QObject::connect(mButtonStop, &QPushButton::clicked, this, &MainWindow::onButtonStopPressed);
+
+    mButtonReplay = new QPushButton(this);
+    mButtonReplay->resize(30,30);
+    mButtonReplay->move(250,450);
+    mButtonReplay->setIcon(QIcon(":/images/replay.png"));
+    mButtonReplay->setIconSize(mButtonReplay->size());
+    QObject::connect(mButtonReplay, &QPushButton::clicked, this, &MainWindow::onButtonReplayPressed);
+}
+
+void MainWindow::createLabel()
+{
+    mLabelMusic = new QLabel(this);
+    mLabelMusic->move(0, 30);
+
+    QPixmap pixmap(":/images/play.png");
+    mLabelMusic->setPixmap(pixmap.scaled(100,100));
+    //mLabelMusic->pixmap()->scaled(100,100);
+}
+
+void MainWindow::createMusicFile()
+{
+    mMusicFile = new MusicFile;
+}
+
+void MainWindow::createWidgetInfo()
+{
+    mWidgetInfo = new WidgetInfo(this);
+    mWidgetInfo->move(0, 280);
+}
+
+void MainWindow::createWidgetVolume()
+{
+    mWidgetVolume = new WidgetVolume(this->mMusicFile, this);
+    mWidgetVolume->move(300, 450);
+}
+
+void MainWindow::createWidgetPlaybackRate()
+{
+    mWidgetPlaybackRate = new WidgetPlaybackRate(mMusicFile, this);
+
+    mWidgetPlaybackRate->move(100, 450);
+}
+
+void MainWindow::createWidgetProgress()
+{
+    mWidgetProgress = new WidgetProgress(mMusicFile, this);
+    mWidgetProgress->move(0, 420);
+}
+
+void MainWindow::createVideoWidget()
+{
+    mVideoWidget = new QVideoWidget(this);
+    mVideoWidget->move(0, 50);
+    mVideoWidget->resize(this->width(), this->width() * 0.75);
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *)
+{
+    onButtonPlayPressed();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    /*if (event->key() == Qt::Key_Space)
+    {
+        mSliderProgress->setFocusPolicy(Qt::StrongFocus);
+        mSliderProgress->setFocus();
+
+        mousePressEvent(nullptr);
+    }*/
+}
+
+void MainWindow::moveEvent(QMoveEvent *event)
+{
+    //qDebug() << event->pos().x() << " " << event->pos().y();
+}
+
+
+void MainWindow::onButtonPlayPressed()
+{
+    if (mMusicFile->media().isNull())
+        return;
+    if (isRunning)
+    {
+        mButtonPlay->setIcon(QIcon(":/images/play.png"));
+        mMusicFile->pause();
+    }
+    else
+    {
+        mButtonPlay->setIcon(QIcon(":/images/pause.png"));
+        mMusicFile->play();
+    }
+    isRunning = !isRunning;
+}
+
+void MainWindow::onButtonStopPressed()
+{
+    mMusicFile->stop();
+    isRunning = false;
+    mButtonPlay->setIcon(QIcon(":/images/play.png"));
+}
+
+void MainWindow::onButtonReplayPressed()
+{
+    isRepeating = !isRepeating;
+    //change icons
+}
+
+void MainWindow::onOpenFile()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, "Open file", "E://", "Music(*.mp3);;Video(*.mp4);");
+    if (fileName.isEmpty())
+    {
+        return;
+    }
+
+    if (MediaFile::type(fileName) == MediaFile::videoFile)
+    {
+        this->mWidgetInfo->setVisible(false);
+        mMusicFile->setVideoOutput(mVideoWidget);
+    }
+    else
+    {
+        this->mWidgetInfo->setVisible(true);
+    }
+    mMusicFile->setMediaFile(fileName);
+}
+
+void MainWindow::onFileChange()
+{
+    isRunning = false;
+    mButtonPlay->setIcon(QIcon(":/images/play.png"));
+}
+
+void MainWindow::onPositionChange(qint64 position)
+{
+    if (isRunning)
+    {
+        if (position == mMusicFile->duration() && position != 0)
+        {
+            if (isRepeating)
+            {
+                mMusicFile->play();
+            }
+        }
+        else
+        {
+            onButtonPlayPressed();
+        }
+    }
+}

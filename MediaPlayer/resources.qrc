@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>pause.png</file>
+        <file>play.png</file>
+        <file>myplayer.jpg</file>
+        <file>stop.png</file>
+        <file>rateDec.png</file>
+        <file>rateInc.png</file>
+        <file>soundOff.png</file>
+        <file>soundOn.png</file>
+        <file>repeat.png</file>
+        <file>repeatPressed.png</file>
+        <file>openPlaylist.png</file>
+        <file>add.png</file>
+        <file>search.png</file>
+        <file>remove.png</file>
+    </qresource>
+</RCC>
