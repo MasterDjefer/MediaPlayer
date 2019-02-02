@@ -32,6 +32,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
     private TextView textStatus;
 
+    private boolean isSearching = false;
+
     ClientSocket clientSocket;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +65,20 @@ public class MainActivity extends Activity implements View.OnClickListener{
     }
 
     @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+        try {
+            clientSocket.closeConnection();
+            Log.d("||||||||||", "destroyed");
+        } catch (Exception e) {
+            Log.d("||||||||||", "error while destroyed");
+            e.printStackTrace();
+        }
+    }
+
+
+    @Override
     public void onClick(View v) {
         if (v.getId() == buttonOpenExplorer.getId())
         {
@@ -73,6 +89,9 @@ public class MainActivity extends Activity implements View.OnClickListener{
         {
             if (clientSocket.isConneted())
                 return;
+            if (isSearching)
+                return;
+            isSearching = true;
             new Thread()
             {
                 @Override
@@ -80,10 +99,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
                 {
                     String msg = "";
                     try {
-                        synchronized (clientSocket)
-                        {
-                            msg = clientSocket.connect();
-                        }
+                        msg = clientSocket.connect();
+                        isSearching = false;
                     }
                     catch(Exception e)
                     {

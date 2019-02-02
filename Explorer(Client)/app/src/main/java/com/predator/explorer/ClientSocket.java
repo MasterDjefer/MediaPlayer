@@ -31,22 +31,6 @@ public class ClientSocket
         running = false;
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-
-        if (connected)
-        {
-            connected = false;
-
-            outStream.write("close".getBytes());
-
-            socket.close();
-            socket = null;
-            outStream.close();
-        }
-    }
-
     public void closeConnection() throws Exception
     {
         if (connected)
